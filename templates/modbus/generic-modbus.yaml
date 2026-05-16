@@ -1,0 +1,16 @@
+manufacturer: Generic
+model: Modbus Device
+protocol: modbus_tcp
+tags:
+  - id: registro_0
+    address: 40001
+    type: int16
+    scale: 1
+    unit: ""
+    writable: false
+  - id: registro_1
+    address: 40002
+    type: int16
+    scale: 1
+    unit: ""
+    writable: true

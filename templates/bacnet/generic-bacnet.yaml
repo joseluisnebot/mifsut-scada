@@ -1,0 +1,22 @@
+manufacturer: Generic
+model: BACnet Device
+protocol: bacnet
+tags:
+  - id: temperatura_sala
+    object_type: analogInput
+    object_instance: 1
+    property: presentValue
+    unit: "°C"
+    writable: false
+  - id: humedad_relativa
+    object_type: analogInput
+    object_instance: 2
+    property: presentValue
+    unit: "%"
+    writable: false
+  - id: setpoint_hvac
+    object_type: analogValue
+    object_instance: 1
+    property: presentValue
+    unit: "°C"
+    writable: true

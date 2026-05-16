@@ -1,0 +1,16 @@
+[Unit]
+Description=SCADA Web Industrial
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/papa/scada
+ExecStart=/home/papa/.local/bin/docker-compose up -d
+ExecStop=/home/papa/.local/bin/docker-compose down
+TimeoutStartSec=300
+User=papa
+
+[Install]
+WantedBy=multi-user.target

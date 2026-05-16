@@ -1,0 +1,20 @@
+manufacturer: Generic
+model: MQTT IoT Device
+protocol: mqtt_ext
+tags:
+  - id: temperatura
+    subscribe_topic: "sensors/{device_id}/temperature"
+    publish_topic: "sensors/{device_id}/setpoint"
+    type: float
+    unit: "°C"
+    writable: true
+  - id: humedad
+    subscribe_topic: "sensors/{device_id}/humidity"
+    type: float
+    unit: "%"
+    writable: false
+  - id: bateria
+    subscribe_topic: "sensors/{device_id}/battery"
+    type: float
+    unit: "%"
+    writable: false

@@ -1,0 +1,21 @@
+manufacturer: Generic
+model: SNMP Device
+protocol: snmp
+version: v2c
+community: public
+tags:
+  - id: cpu_usage
+    oid: "1.3.6.1.4.1.2021.11.9.0"
+    type: int
+    unit: "%"
+    writable: false
+  - id: memoria_libre
+    oid: "1.3.6.1.4.1.2021.4.11.0"
+    type: int
+    unit: KB
+    writable: false
+  - id: temperatura_cpu
+    oid: "1.3.6.1.4.1.2021.13.16.2.1.3.1"
+    type: float
+    unit: "°C"
+    writable: false

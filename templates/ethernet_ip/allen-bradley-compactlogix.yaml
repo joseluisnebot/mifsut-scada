@@ -1,0 +1,23 @@
+manufacturer: Allen-Bradley
+model: CompactLogix
+protocol: ethernet_ip
+tags:
+  - id: velocidad_cinta
+    tag_name: "Program:Main.Velocidad_Cinta"
+    type: real
+    unit: "m/min"
+    writable: false
+  - id: temperatura_motor
+    tag_name: "Program:Main.Temp_Motor"
+    type: real
+    unit: "°C"
+    writable: false
+  - id: marcha_motor
+    tag_name: "Program:Main.Marcha_Motor"
+    type: bool
+    writable: true
+  - id: setpoint_velocidad
+    tag_name: "Program:Main.Setpoint_Vel"
+    type: real
+    unit: "m/min"
+    writable: true

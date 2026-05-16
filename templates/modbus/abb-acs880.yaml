@@ -1,0 +1,34 @@
+manufacturer: ABB
+model: ACS880
+protocol: modbus_tcp
+tags:
+  - id: frecuencia_salida
+    address: 40001
+    type: float32
+    scale: 0.01
+    unit: Hz
+    writable: false
+  - id: corriente_motor
+    address: 40003
+    type: float32
+    scale: 0.1
+    unit: A
+    writable: false
+  - id: tension_dc
+    address: 40005
+    type: float32
+    scale: 0.1
+    unit: V
+    writable: false
+  - id: setpoint_velocidad
+    address: 40010
+    type: int16
+    scale: 1
+    unit: rpm
+    writable: true
+  - id: temperatura_igbt
+    address: 40015
+    type: float32
+    scale: 0.1
+    unit: "°C"
+    writable: false

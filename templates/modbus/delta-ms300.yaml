@@ -1,0 +1,73 @@
+manufacturer: Delta Electronics
+model: MS300 (VFD2A8MS21ANSAA)
+protocol: modbus_tcp
+# Conexion via USR-W610 (RS485→WiFi) o cable directo RS485→TCP
+# unit_id = direccion Modbus del variador (parametro P00.00, defecto 1)
+tags:
+  # --- Lecturas ---
+  - id: frecuencia_salida
+    address: 48450        # registro 0x2101
+    type: float32
+    scale: 0.01
+    unit: Hz
+    writable: false
+
+  - id: corriente_salida
+    address: 48451        # registro 0x2102
+    type: float32
+    scale: 0.1
+    unit: A
+    writable: false
+
+  - id: tension_bus_dc
+    address: 48452        # registro 0x2103
+    type: float32
+    scale: 0.1
+    unit: V
+    writable: false
+
+  - id: tension_salida
+    address: 48453        # registro 0x2104
+    type: float32
+    scale: 0.1
+    unit: V
+    writable: false
+
+  - id: potencia_salida
+    address: 48463        # registro 0x210E
+    type: float32
+    scale: 0.1
+    unit: kW
+    writable: false
+
+  - id: temperatura_disipador
+    address: 48471        # registro 0x2116
+    type: float32
+    scale: 0.1
+    unit: "°C"
+    writable: false
+
+  - id: estado_variador
+    address: 48449        # registro 0x2100 (word de estado)
+    type: int16
+    scale: 1
+    unit: ""
+    writable: false
+    # bits: 0=listo, 1=run, 2=avance, 3=fallo, 5=vel_cero, 7=a_velocidad
+
+  # --- Escrituras ---
+  - id: setpoint_frecuencia
+    address: 40258        # registro 0x0101
+    type: float32
+    scale: 0.01
+    unit: Hz
+    writable: true
+    # rango: 0 - 599 Hz (segun P01.00 frecuencia maxima)
+
+  - id: control_marcha
+    address: 40257        # registro 0x0100 (word de control)
+    type: int16
+    scale: 1
+    unit: ""
+    writable: true
+    # valores: 2=arranque avance, 1=paro, 17=jog, 4=arranque retroceso

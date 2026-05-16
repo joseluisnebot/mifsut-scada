@@ -1,0 +1,45 @@
+manufacturer: Siemens
+model: SINAMICS G120
+protocol: modbus_tcp
+tags:
+  - id: frecuencia_salida
+    address: 42115        # registro 2114 (0x842)
+    type: float32
+    scale: 0.01
+    unit: Hz
+    writable: false
+
+  - id: corriente_salida
+    address: 42116
+    type: float32
+    scale: 0.1
+    unit: A
+    writable: false
+
+  - id: tension_salida
+    address: 42117
+    type: float32
+    scale: 0.1
+    unit: V
+    writable: false
+
+  - id: temperatura_motor
+    address: 42118
+    type: float32
+    scale: 0.1
+    unit: "°C"
+    writable: false
+
+  - id: setpoint_frecuencia
+    address: 40002
+    type: float32
+    scale: 0.01
+    unit: Hz
+    writable: true
+
+  - id: control_marcha
+    address: 40001
+    type: int16
+    scale: 1
+    unit: ""
+    writable: true

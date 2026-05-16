@@ -1,0 +1,22 @@
+manufacturer: Generic
+model: DNP3 Device
+protocol: dnp3
+tags:
+  - id: voltaje_linea
+    group: 30
+    variation: 5
+    index: 0
+    unit: V
+    writable: false
+  - id: corriente_linea
+    group: 30
+    variation: 5
+    index: 1
+    unit: A
+    writable: false
+  - id: estado_interruptor
+    group: 12
+    variation: 1
+    index: 0
+    type: bool
+    writable: true

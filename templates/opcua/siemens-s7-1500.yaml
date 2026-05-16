@@ -1,0 +1,24 @@
+manufacturer: Siemens
+model: S7-1500
+protocol: opcua
+tags:
+  - id: temperatura_zona1
+    node_id: "ns=2;s=DB1.Temperatura_Zona1"
+    type: float
+    unit: "°C"
+    writable: false
+  - id: temperatura_zona2
+    node_id: "ns=2;s=DB1.Temperatura_Zona2"
+    type: float
+    unit: "°C"
+    writable: false
+  - id: setpoint_temp
+    node_id: "ns=2;s=DB1.Setpoint_Temp"
+    type: float
+    unit: "°C"
+    writable: true
+  - id: estado_maquina
+    node_id: "ns=2;s=DB1.Estado"
+    type: int
+    unit: ""
+    writable: false

@@ -1,0 +1,9 @@
+# Ejemplo de configuración de dispositivo
+# Copia este archivo a devices/<protocolo>/<nombre>.yaml y personaliza
+device_id: mi-dispositivo
+template: generic-modbus
+connection:
+  host: 192.168.1.100
+  port: 502
+  unit_id: 1
+poll_interval_ms: 1000

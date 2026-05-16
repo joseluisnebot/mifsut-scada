@@ -1,0 +1,28 @@
+manufacturer: Schneider Electric
+model: Modicon M340
+protocol: modbus_tcp
+tags:
+  - id: temperatura_zona1
+    address: 40001
+    type: float32
+    scale: 0.1
+    unit: "°C"
+    writable: false
+  - id: presion_linea
+    address: 40003
+    type: float32
+    scale: 0.01
+    unit: bar
+    writable: false
+  - id: caudal
+    address: 40005
+    type: float32
+    scale: 0.1
+    unit: "m3/h"
+    writable: false
+  - id: setpoint_temperatura
+    address: 40010
+    type: float32
+    scale: 0.1
+    unit: "°C"
+    writable: true

@@ -1,0 +1,14 @@
+manufacturer: Generic
+model: OPC-UA Device
+protocol: opcua
+tags:
+  - id: variable1
+    node_id: "ns=2;i=1001"
+    type: float
+    unit: ""
+    writable: false
+  - id: variable2
+    node_id: "ns=2;i=1002"
+    type: float
+    unit: ""
+    writable: true

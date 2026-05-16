@@ -1,0 +1,165 @@
+version: "3.9"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpassword
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG:-scada}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET:-signals}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN:-mytoken}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: scada
+      POSTGRES_PASSWORD: scada
+      POSTGRES_DB: scada
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scada"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  core:
+    build: ./core
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      influxdb:
+        condition: service_started
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+    depends_on:
+      - core
+    restart: unless-stopped
+
+  driver-modbus:
+    build:
+      context: ./drivers
+      dockerfile: modbus/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+  driver-opcua:
+    build:
+      context: ./drivers
+      dockerfile: opcua/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    profiles: ["opcua"]
+    restart: unless-stopped
+
+  driver-mqtt-ext:
+    build:
+      context: ./drivers
+      dockerfile: mqtt_ext/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    profiles: ["mqtt-ext"]
+    restart: unless-stopped
+
+  driver-bacnet:
+    build:
+      context: ./drivers
+      dockerfile: bacnet/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    profiles: ["bacnet"]
+    restart: unless-stopped
+
+  driver-dnp3:
+    build:
+      context: ./drivers
+      dockerfile: dnp3/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    profiles: ["dnp3"]
+    restart: unless-stopped
+
+  driver-ethernet-ip:
+    build:
+      context: ./drivers
+      dockerfile: ethernet_ip/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    profiles: ["ethernet-ip"]
+    restart: unless-stopped
+
+  driver-snmp:
+    build:
+      context: ./drivers
+      dockerfile: snmp/Dockerfile
+    env_file: .env
+    volumes:
+      - ./devices:/app/devices
+      - ./templates:/app/templates
+    depends_on:
+      - mosquitto
+    profiles: ["snmp"]
+    restart: unless-stopped
+
+volumes:
+  influxdb_data:
+  postgres_data:

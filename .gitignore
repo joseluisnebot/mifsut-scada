@@ -1,0 +1,40 @@
+# Entorno — cada instalación tiene el suyo
+.env
+
+# Configuración de dispositivos — específica de cada instalación
+devices/modbus/*.yaml
+devices/opcua/*.yaml
+devices/bacnet/*.yaml
+devices/dnp3/*.yaml
+devices/ethernet_ip/*.yaml
+devices/snmp/*.yaml
+devices/mqtt_ext/*.yaml
+devices/alarms.yaml
+
+# Mantener el ejemplo y la carpeta
+!devices/example-device.yaml
+!devices/modbus/.gitkeep
+!devices/opcua/.gitkeep
+!devices/bacnet/.gitkeep
+!devices/dnp3/.gitkeep
+!devices/ethernet_ip/.gitkeep
+!devices/snmp/.gitkeep
+!devices/mqtt_ext/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Next.js / Node
+.next/
+node_modules/
+out/
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
