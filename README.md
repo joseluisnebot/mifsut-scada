@@ -26,6 +26,25 @@ http://localhost:3000
 
 ---
 
+## Capturas de pantalla
+
+### Dashboard — datos en tiempo real con gráficas y alarmas
+![Dashboard](images/dashboard.png)
+
+### Gestión de dispositivos
+![Dispositivos](images/dispositivos.png)
+
+### Templates por protocolo
+![Templates](images/templates.png)
+
+### Detalle de un template con sus tags
+![Detalle template](images/template-detalle.png)
+
+### Crear un template nuevo desde la web
+![Crear template](images/template-crear.png)
+
+---
+
 ## Qué incluye
 
 | Componente | Tecnología | Puerto |
