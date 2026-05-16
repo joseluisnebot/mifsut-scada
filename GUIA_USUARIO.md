@@ -86,6 +86,55 @@ Los tags que tienen control (writable) permiten enviar valores directamente al d
 
 ---
 
+## Modo simulador y modo producción
+
+El sistema tiene dos modos de funcionamiento que se controlan con una sola variable en el fichero `.env` del servidor.
+
+### Modo simulador — `MOCK_DEVICES=true`
+
+Es el modo por defecto. El sistema genera datos aleatorios coherentes (frecuencias entre 45-55 Hz, temperaturas entre 20-80 °C, etc.) sin necesitar ningún dispositivo físico conectado.
+
+**Cuándo usarlo:**
+- Al instalar el sistema por primera vez, para verificar que todo funciona
+- Para hacer demostraciones a clientes sin necesitar el hardware presente
+- Para formación de operadores
+- Cuando el hardware no está disponible temporalmente
+
+### Modo producción — `MOCK_DEVICES=false`
+
+El sistema intenta conectar con los dispositivos reales configurados en la carpeta `devices/`. Si un dispositivo no responde, aparece como OFFLINE en el dashboard.
+
+**Cuándo usarlo:**
+- Cuando el hardware está físicamente conectado y configurado
+- En la instalación definitiva en el cliente
+
+### Cómo cambiar de modo
+
+El cambio lo hace el técnico de instalación en el servidor, editando el fichero `.env`:
+
+```bash
+# Abrir el fichero en el servidor
+nano ~/scada/.env
+
+# Cambiar la línea MOCK_DEVICES
+MOCK_DEVICES=false    # producción
+MOCK_DEVICES=true     # simulador
+
+# Guardar: Ctrl+O → Enter → Ctrl+X
+```
+
+Después reiniciar los drivers para que apliquen el cambio:
+
+```bash
+~/.local/bin/docker-compose restart driver-modbus
+```
+
+El cambio es inmediato — en pocos segundos el dashboard mostrará datos reales o simulados según el modo elegido.
+
+> Se puede alternar entre los dos modos tantas veces como se quiera sin perder configuraciones ni datos históricos.
+
+---
+
 ## Gestión de dispositivos
 
 ### Ver dispositivos

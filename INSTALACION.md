@@ -194,7 +194,54 @@ Por defecto solo arranca el driver Modbus. Para activar otros:
 
 ---
 
-## 8. Conectar hardware real
+## 8. Pasar de simulador a producción
+
+El sistema arranca por defecto en **modo simulador** (`MOCK_DEVICES=true`). En este modo genera datos aleatorios coherentes sin necesitar ningún dispositivo físico. Es ideal para verificar que la instalación funciona correctamente antes de conectar hardware real.
+
+### Diferencia entre los dos modos
+
+| | Simulador (`true`) | Producción (`false`) |
+|---|---|---|
+| Datos | Generados aleatoriamente | Leídos del dispositivo real |
+| Conexión de red | No intenta conectar | Conecta a la IP configurada |
+| Fallo de conexión | Nunca falla | Reporta OFFLINE en el dashboard |
+| Setpoints enviados | Se aceptan pero no hacen nada | Se escriben en el dispositivo real |
+| Uso recomendado | Pruebas, demos, verificación | Instalación en producción |
+
+### Proceso recomendado
+
+Sigue siempre este orden para evitar problemas:
+
+**1.** Arranca en modo simulador y verifica que el dashboard carga y muestra datos:
+```
+http://localhost:3000  →  deben aparecer dispositivos con valores
+```
+
+**2.** Configura tu dispositivo físico (consulta la Guía de Usuario).
+
+**3.** Añade el fichero de configuración del dispositivo en `devices/modbus/`.
+
+**4.** Edita el `.env` y cambia la variable:
+```bash
+# Abrir el fichero
+nano ~/scada/.env
+
+# Cambiar esta línea
+MOCK_DEVICES=false
+```
+
+**5.** Reinicia los drivers para que apliquen el cambio:
+```bash
+~/.local/bin/docker-compose restart driver-modbus
+```
+
+**6.** Comprueba el dashboard — el dispositivo debe aparecer ONLINE con datos reales. Si aparece OFFLINE, revisa la sección de solución de problemas.
+
+> Puedes volver al simulador en cualquier momento repitiendo el proceso con `MOCK_DEVICES=true`. Es útil para demostrar el sistema a un cliente sin necesitar el hardware presente.
+
+---
+
+## 9. Conectar hardware real
 
 ### 1. Editar el `.env`
 
@@ -210,7 +257,7 @@ Edita (o crea) el fichero en `devices/modbus/mi-dispositivo.yaml`:
 device_id: variador-linea1
 template: delta-ms300
 connection:
-  host: 192.168.1.10    # IP del dispositivo o del conversor USR-W610
+  host: 192.168.1.10    # IP del dispositivo o del conversor
   port: 502
   unit_id: 1
 poll_interval_ms: 1000
