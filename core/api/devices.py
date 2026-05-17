@@ -4,7 +4,7 @@ import yaml
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any
-from core.mqtt_handler import get_latest
+from core.mqtt_handler import get_latest, clear_device
 
 TEMPLATES_PATH = "/app/templates"
 DEVICES_PATH = "/app/devices"
@@ -150,13 +150,20 @@ async def delete_device(device_id: str):
         for fname in os.listdir(proto_path):
             if fname.endswith((".yaml", ".yml")):
                 path = os.path.join(proto_path, fname)
-                with open(path) as f:
-                    dev = yaml.safe_load(f)
-                if dev.get("device_id") == device_id:
-                    os.remove(path)
-                    deleted.append(path)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Device file not found")
+                try:
+                    with open(path) as f:
+                        dev = yaml.safe_load(f)
+                    if dev and dev.get("device_id") == device_id:
+                        os.remove(path)
+                        deleted.append(path)
+                except Exception:
+                    continue
+    # comprobar si existía en memoria antes de limpiar
+    latest = get_latest()
+    had_mqtt = any(k.split("/")[0] == device_id for k in latest)
+    clear_device(device_id)
+    if not deleted and not had_mqtt:
+        raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
     return {"ok": True, "deleted": deleted}
 
 

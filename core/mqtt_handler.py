@@ -27,6 +27,12 @@ def get_latest() -> dict:
     return _latest
 
 
+def clear_device(device_id: str):
+    keys = [k for k in _latest if k.split("/")[0] == device_id]
+    for k in keys:
+        del _latest[k]
+
+
 def register_ws(ws):
     _ws_clients.add(ws)
 
