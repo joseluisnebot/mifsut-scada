@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Wifi, WifiOff, AlertTriangle, Bell, BellOff, Send, X } from 'lucide-react'
+import { Wifi, WifiOff, AlertTriangle, Bell, BellOff, Send, X, Clock } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
-const Sparkline = dynamic(() => import('./components/Sparkline'), { ssr: false })
+const Sparkline  = dynamic(() => import('./components/Sparkline'),  { ssr: false })
+const TagChart   = dynamic(() => import('./components/TagChart'),   { ssr: false })
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const WS_URL  = process.env.NEXT_PUBLIC_WS_URL  || 'ws://localhost:8000'
@@ -20,7 +21,8 @@ interface DevStatus { online: boolean; protocol: string; error: string|null }
 interface TagEntry  { tag_id: string; data: TagData }
 interface DevGroup  { device_id: string; status: DevStatus|null; tags: TagEntry[] }
 interface Threshold { min?: number; max?: number }
-interface AlarmEdit { device_id: string; tag_id: string; min: string; max: string }
+interface AlarmEdit   { device_id: string; tag_id: string; min: string; max: string }
+interface HistoryTag  { device_id: string; tag_id: string; unit: string; color: string }
 
 function isAlarming(value: number|boolean|string, thr?: Threshold) {
   if (!thr || typeof value !== 'number') return false
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const [alarmEdit,  setAlarmEdit]  = useState<AlarmEdit|null>(null)
   const [writeInputs, setWriteInputs] = useState<Record<string, string>>({})
   const [writeStatus, setWriteStatus] = useState<Record<string, string>>({})
+  const [historyTag,  setHistoryTag]  = useState<HistoryTag|null>(null)
 
   // buffer de histórico en tiempo real por tag
   const buffers = useRef<Record<string, {ts:number; value:number}[]>>({})
@@ -233,6 +236,14 @@ export default function Dashboard() {
                             <AlertTriangle size={12}/> ALARMA
                           </span>
                         )}
+                        {isNum && (
+                          <button
+                            onClick={() => setHistoryTag({ device_id, tag_id, unit: data.unit, color })}
+                            title="Ver histórico"
+                            className="p-1 rounded text-gray-600 hover:text-blue-400 transition-colors">
+                            <Clock size={13}/>
+                          </button>
+                        )}
                         <button
                           onClick={() => setAlarmEdit({
                             device_id, tag_id,
@@ -304,6 +315,34 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* ── modal histórico ── */}
+      {historyTag && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={e => { if (e.target === e.currentTarget) setHistoryTag(null) }}>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-3xl shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className="text-blue-400"/>
+                <h3 className="font-semibold">Histórico</h3>
+                <span className="text-xs text-gray-500 font-mono ml-1">
+                  {historyTag.device_id} / {historyTag.tag_id}
+                </span>
+              </div>
+              <button onClick={() => setHistoryTag(null)}
+                className="text-gray-500 hover:text-gray-300">
+                <X size={18}/>
+              </button>
+            </div>
+            <TagChart
+              device_id={historyTag.device_id}
+              tag_id={historyTag.tag_id}
+              unit={historyTag.unit}
+              color={historyTag.color}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── modal umbral ── */}
       {alarmEdit && (

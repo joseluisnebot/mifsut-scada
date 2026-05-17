@@ -26,21 +26,40 @@ async def list_tags():
 async def tag_history(
     device_id: str,
     tag_id: str,
-    minutes: int = Query(default=60, ge=5, le=1440),
+    minutes: int = Query(default=60, ge=5, le=10080),
+    start: str = Query(default=None),
+    end: str = Query(default=None),
 ):
-    # ventana de agregación según rango solicitado
-    if minutes <= 15:
-        window = "10s"
-    elif minutes <= 60:
-        window = "30s"
-    elif minutes <= 360:
-        window = "2m"
+    from datetime import datetime
+
+    if start and end:
+        try:
+            dt_start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+            dt_end   = datetime.fromisoformat(end.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+        duration_min = (dt_end - dt_start).total_seconds() / 60
+        range_clause = f'start: {dt_start.strftime("%Y-%m-%dT%H:%M:%SZ")}, stop: {dt_end.strftime("%Y-%m-%dT%H:%M:%SZ")}'
     else:
+        duration_min = minutes
+        range_clause = f"start: -{minutes}m"
+
+    if duration_min <= 15:
+        window = "10s"
+    elif duration_min <= 60:
+        window = "30s"
+    elif duration_min <= 360:
+        window = "2m"
+    elif duration_min <= 1440:
         window = "10m"
+    elif duration_min <= 10080:
+        window = "1h"
+    else:
+        window = "6h"
 
     query = f"""
 from(bucket: "{INFLUX_BUCKET}")
-  |> range(start: -{minutes}m)
+  |> range({range_clause})
   |> filter(fn: (r) => r["_measurement"] == "tag_value")
   |> filter(fn: (r) => r["device_id"] == "{device_id}")
   |> filter(fn: (r) => r["tag_id"] == "{tag_id}")
@@ -62,7 +81,7 @@ from(bucket: "{INFLUX_BUCKET}")
                         "value": round(float(v), 3),
                     })
         client.close()
-        return {"device_id": device_id, "tag_id": tag_id, "minutes": minutes, "points": points}
+        return {"device_id": device_id, "tag_id": tag_id, "points": points}
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"InfluxDB error: {e}")
 
