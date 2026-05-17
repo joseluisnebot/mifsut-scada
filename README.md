@@ -80,6 +80,14 @@ El dashboard muestra una tarjeta por cada dispositivo con:
 - Valor actual de cada variable (tag)
 - **Gráfica en tiempo real** — se actualiza con cada dato recibido sin recargar la página
 
+### Ver histórico de un tag
+
+Cada tag numérico tiene un icono de reloj 🕐. Al pulsarlo se abre un panel con:
+- Rangos rápidos: **15 min, 1 h, 6 h, 24 h, 7 días**
+- **Selector de fechas libre** — elige cualquier rango con fecha y hora exactas
+- Estadísticas instantáneas: mínimo, máximo y media del rango
+- Gráfica interactiva con tooltip al pasar el ratón
+
 ### Configurar alarmas
 
 Cada tag tiene un icono de campana 🔔. Al pulsarlo puedes definir:

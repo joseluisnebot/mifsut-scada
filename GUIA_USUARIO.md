@@ -369,9 +369,23 @@ Todas funcionan igual en este SCADA. Solo necesitas el manual de comunicaciones 
 
 ## Datos históricos
 
-El sistema guarda todo el histórico en InfluxDB. Para consultar los datos históricos de un tag haz clic en el icono de gráfica ampliada (disponible en versiones futuras o accediendo directamente a InfluxDB).
+El sistema guarda todo el histórico en InfluxDB y lo puedes consultar directamente desde el dashboard.
 
-**Acceso a InfluxDB:**
+### Abrir el histórico de un tag
+
+Cada tag numérico muestra un icono de reloj 🕐 en la esquina superior derecha de su tarjeta. Al pulsarlo se abre el panel de histórico con:
+
+- **Rangos rápidos** — botones para ver las últimas 15 min, 1 h, 6 h, 24 h o 7 días
+- **Rango personalizado** — pulsa "Personalizado" e introduce fecha y hora de inicio y fin exactas
+- **Estadísticas** — mínimo, máximo y media del rango seleccionado
+- **Gráfica interactiva** — pasa el ratón sobre la línea para ver el valor exacto en cada punto
+
+La ventana de agregación se ajusta automáticamente según el rango (10 s para rangos cortos, 1 h para 7 días).
+
+### Acceso directo a InfluxDB
+
+Para consultas avanzadas o exportar datos:
+
 ```
 http://IP_DEL_SERVIDOR:8086
 Usuario: admin
