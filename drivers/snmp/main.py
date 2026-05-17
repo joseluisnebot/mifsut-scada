@@ -69,11 +69,11 @@ class SnmpDriver(BaseDriver):
             if error_status:
                 logger.warning(f"[{self.device_id}] {tag['id']}: {error_status.prettyPrint()}")
                 return None
-            value = var_binds[0][1].prettyPrint()
+            raw = var_binds[0][1].prettyPrint()
             try:
-                value = float(value)
+                value = float(raw) * tag.get("scale", 1)
             except ValueError:
-                pass
+                value = raw
             return {
                 "value": value,
                 "unit": tag.get("unit", ""),

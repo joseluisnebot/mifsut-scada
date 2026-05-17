@@ -46,18 +46,34 @@ class ModbusDriver(BaseDriver):
         if MOCK:
             return await self.mock_value(tag)
         try:
-            from pymodbus.client import AsyncModbusTcpClient
+            import struct, time
             unit_id = self.config["connection"].get("unit_id", 1)
             address = tag["address"] - 40001
-            result = await self.client.read_holding_registers(address, 2, slave=unit_id)
+            tag_type = tag.get("type", "float32")
+            scale = tag.get("scale", 1)
+
+            count = 2 if tag_type in ("float32", "float", "int32") else 1
+            result = await self.client.read_holding_registers(address, count, slave=unit_id)
             if result.isError():
                 return None
-            raw = result.registers[0]
-            scale = tag.get("scale", 1)
-            value = raw * scale
-            import time
+
+            if tag_type in ("float32", "float"):
+                # 2 registros big-endian → IEEE 754
+                raw = struct.pack(">HH", result.registers[0], result.registers[1])
+                value = round(struct.unpack(">f", raw)[0] * scale, 6)
+            elif tag_type == "int32":
+                raw = struct.pack(">HH", result.registers[0], result.registers[1])
+                value = struct.unpack(">i", raw)[0] * scale
+            elif tag_type in ("int16", "int"):
+                raw = result.registers[0]
+                if raw > 32767:      # complemento a dos para negativos
+                    raw -= 65536
+                value = raw * scale
+            else:
+                value = result.registers[0] * scale
+
             return {
-                "value": value,
+                "value": round(float(value), 6),
                 "unit": tag.get("unit", ""),
                 "ts": int(time.time() * 1000),
                 "quality": "good",
