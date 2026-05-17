@@ -97,14 +97,25 @@ def _broadcast(data: dict):
 
 def create_mqtt_client(host: str, port: int) -> mqtt.Client:
     try:
-        # paho-mqtt >= 2.0
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="scada-core")
     except AttributeError:
-        # paho-mqtt 1.x
         client = mqtt.Client(client_id="scada-core")
-    client.on_message = _on_message
-    client.connect(host, port, 60)
-    client.subscribe("scada/#")
+
+    def on_connect(c, userdata, flags, rc):
+        if rc == 0:
+            c.subscribe("scada/#")
+            logger.info(f"MQTT conectado y suscrito a scada/#")
+        else:
+            logger.error(f"MQTT error de conexión rc={rc}")
+
+    def on_disconnect(c, userdata, rc):
+        logger.warning(f"MQTT desconectado (rc={rc}), reconectando automáticamente...")
+
+    client.on_message    = _on_message
+    client.on_connect    = on_connect
+    client.on_disconnect = on_disconnect
+    client.reconnect_delay_set(min_delay=1, max_delay=30)
+    client.connect(host, port, keepalive=60)
     client.loop_start()
-    logger.info(f"MQTT connected to {host}:{port}")
+    logger.info(f"MQTT cliente iniciado → {host}:{port}")
     return client
