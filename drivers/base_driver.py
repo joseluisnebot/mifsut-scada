@@ -32,6 +32,7 @@ class BaseDriver(ABC):
 
     async def poll_loop(self):
         await self._publish_status(online=False)
+        last_heartbeat = 0.0
         while True:
             if not self.connected:
                 self.connected = await self.connect()
@@ -40,6 +41,7 @@ class BaseDriver(ABC):
                     await asyncio.sleep(5)
                     continue
                 await self._publish_status(online=True)
+                last_heartbeat = time.time()
 
             try:
                 for tag in self.template.get("tags", []):
@@ -53,6 +55,11 @@ class BaseDriver(ABC):
                 self.connected = False
                 await self._publish_status(online=False, error=str(e))
 
+            # heartbeat cada 30s para que el core sepa que sigue vivo
+            if self.connected and time.time() - last_heartbeat >= 30:
+                await self._publish_status(online=True)
+                last_heartbeat = time.time()
+
             await asyncio.sleep(self.poll_interval)
 
     async def _publish_status(self, online: bool, error=None):
@@ -62,7 +69,11 @@ class BaseDriver(ABC):
             "protocol": self.protocol,
             "error": error,
         }
-        self.mqtt.publish(f"scada/{self.device_id}/_status", json.dumps(payload))
+        self.mqtt.publish(
+            f"scada/{self.device_id}/_status",
+            json.dumps(payload),
+            retain=True,
+        )
 
     async def mock_value(self, tag: dict) -> dict:
         unit = tag.get("unit", "")
