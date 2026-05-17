@@ -13,7 +13,7 @@ const PROTOCOL_FIELDS: Record<string, string[]> = {
   ethernet_ip: ['tag_name', 'type', 'unit', 'writable'],
   bacnet:      ['object_type', 'object_instance', 'property', 'unit', 'writable'],
   dnp3:        ['group', 'variation', 'index', 'unit', 'writable'],
-  snmp:        ['oid', 'type', 'unit'],
+  snmp:        ['oid', 'scale', 'type', 'unit'],
   mqtt_ext:    ['subscribe_topic', 'publish_topic', 'type', 'unit', 'writable'],
 }
 
