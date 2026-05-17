@@ -110,28 +110,33 @@ async def main():
     client.connect(MQTT_HOST, MQTT_PORT, 60)
     client.loop_start()
 
-    devices = load_devices()
-    if not devices:
-        logger.warning(f"No devices found in {DEVICES_PATH}, using demo device")
-        devices = [{
-            "device_id": "variador-demo",
-            "template": "abb-acs880",
-            "connection": {"host": "192.168.1.10", "port": 502, "unit_id": 1},
-            "poll_interval_ms": 1000,
-        }]
+    running: dict[str, asyncio.Task] = {}
 
-    tasks = []
-    for dev in devices:
-        tpl_name = dev.get("template", "generic-modbus")
-        try:
-            template = load_template(tpl_name)
-        except FileNotFoundError:
-            logger.error(f"Template {tpl_name} not found, skipping {dev['device_id']}")
-            continue
-        driver = ModbusDriver(dev, template, client)
-        tasks.append(asyncio.create_task(driver.poll_loop()))
+    while True:
+        devices = load_devices()
+        current_ids = set()
+        for dev in devices:
+            did = dev.get("device_id")
+            if not did:
+                continue
+            current_ids.add(did)
+            if did not in running or running[did].done():
+                tpl_name = dev.get("template", "generic-modbus")
+                try:
+                    template = load_template(tpl_name)
+                except FileNotFoundError:
+                    logger.error(f"Template {tpl_name} not found, skipping {did}")
+                    continue
+                logger.info(f"Iniciando driver para {did}")
+                running[did] = asyncio.create_task(ModbusDriver(dev, template, client).poll_loop())
 
-    await asyncio.gather(*tasks)
+        for did in list(running):
+            if did not in current_ids:
+                running[did].cancel()
+                del running[did]
+                logger.info(f"Driver detenido para {did}")
+
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":

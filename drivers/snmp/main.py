@@ -22,12 +22,29 @@ TEMPLATES_PATH = "/app/templates/snmp"
 class SnmpDriver(BaseDriver):
     def __init__(self, device_config, template, mqtt_client):
         super().__init__(device_config, template, mqtt_client)
+        self._engine = None
+        self._community = None
+        self._version = None
+        self._host = None
+        self._port = 161
 
     async def connect(self) -> bool:
         if MOCK:
             logger.info(f"[{self.device_id}] MOCK connect OK")
             return True
-        return True
+        try:
+            from pysnmp.hlapi.asyncio import SnmpEngine
+            self._engine = SnmpEngine()
+            self._host = self.config["connection"]["host"]
+            self._port = int(self.config["connection"].get("port", 161))
+            self._community = self.template.get("community", "public")
+            version_map = {"v1": 0, "v2c": 1}
+            self._version = version_map.get(self.template.get("version", "v2c"), 1)
+            logger.info(f"[{self.device_id}] SNMP connect OK → {self._host}:{self._port}")
+            return True
+        except Exception as e:
+            logger.error(f"[{self.device_id}] connect error: {e}")
+            return False
 
     async def disconnect(self): ...
 
@@ -36,22 +53,21 @@ class SnmpDriver(BaseDriver):
             return await self.mock_value(tag)
         try:
             from pysnmp.hlapi.asyncio import (
-                getCmd, SnmpEngine, CommunityData, UdpTransportTarget,
+                getCmd, CommunityData, UdpTransportTarget,
                 ContextData, ObjectType, ObjectIdentity
             )
-            host = self.config["connection"]["host"]
-            community = self.template.get("community", "public")
-            version_map = {"v1": 0, "v2c": 1}
-            version = version_map.get(self.template.get("version", "v2c"), 1)
-
-            error_indication, error_status, error_index, var_binds = await getCmd(
-                SnmpEngine(),
-                CommunityData(community, mpModel=version),
-                UdpTransportTarget((host, 161)),
+            error_indication, error_status, _, var_binds = await getCmd(
+                self._engine,
+                CommunityData(self._community, mpModel=self._version),
+                UdpTransportTarget((self._host, self._port), timeout=2, retries=1),
                 ContextData(),
                 ObjectType(ObjectIdentity(tag["oid"]))
             )
-            if error_indication or error_status:
+            if error_indication:
+                logger.warning(f"[{self.device_id}] {tag['id']}: {error_indication}")
+                return None
+            if error_status:
+                logger.warning(f"[{self.device_id}] {tag['id']}: {error_status.prettyPrint()}")
                 return None
             value = var_binds[0][1].prettyPrint()
             try:
@@ -102,24 +118,33 @@ async def main():
     client.connect(MQTT_HOST, MQTT_PORT, 60)
     client.loop_start()
 
-    devices = load_devices()
-    if not devices:
-        devices = [{
-            "device_id": "switch-snmp-demo",
-            "template": "generic-snmp",
-            "connection": {"host": "192.168.1.1"},
-            "poll_interval_ms": 5000,
-        }]
+    running: dict[str, asyncio.Task] = {}
 
-    tasks = []
-    for dev in devices:
-        try:
-            template = load_template(dev.get("template", "generic-snmp"))
-        except FileNotFoundError:
-            continue
-        tasks.append(asyncio.create_task(SnmpDriver(dev, template, client).poll_loop()))
+    while True:
+        devices = load_devices()
+        current_ids = set()
+        for dev in devices:
+            did = dev.get("device_id")
+            if not did:
+                continue
+            current_ids.add(did)
+            if did not in running or running[did].done():
+                try:
+                    template = load_template(dev.get("template", "generic-snmp"))
+                except FileNotFoundError:
+                    logger.warning(f"Template no encontrado para {did}, ignorando")
+                    continue
+                logger.info(f"Iniciando driver para {did}")
+                running[did] = asyncio.create_task(SnmpDriver(dev, template, client).poll_loop())
 
-    await asyncio.gather(*tasks)
+        # cancelar tareas de dispositivos eliminados
+        for did in list(running):
+            if did not in current_ids:
+                running[did].cancel()
+                del running[did]
+                logger.info(f"Driver detenido para {did}")
+
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":
