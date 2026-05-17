@@ -29,7 +29,7 @@ http://localhost:3000
 ## Capturas de pantalla
 
 ### Dashboard — datos en tiempo real con gráficas y alarmas
-![Dashboard](images/dashboard.png)
+![Dashboard](images/dashboard-v2.png)
 
 
 ### Gestión de dispositivos
