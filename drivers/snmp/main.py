@@ -110,6 +110,14 @@ def load_template(name: str) -> dict:
     raise FileNotFoundError(name)
 
 
+def get_template_mtime(name: str) -> float:
+    for ext in (".yaml", ".yml"):
+        path = os.path.join(TEMPLATES_PATH, f"{name}{ext}")
+        if os.path.exists(path):
+            return os.path.getmtime(path)
+    return 0.0
+
+
 async def main():
     try:
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="driver-snmp")
@@ -119,6 +127,7 @@ async def main():
     client.loop_start()
 
     running: dict[str, asyncio.Task] = {}
+    template_mtimes: dict[str, float] = {}
 
     while True:
         devices = load_devices()
@@ -128,12 +137,22 @@ async def main():
             if not did:
                 continue
             current_ids.add(did)
+            tpl_name = dev.get("template", "generic-snmp")
+            mtime = get_template_mtime(tpl_name)
+
+            template_changed = did in template_mtimes and template_mtimes[did] != mtime
+            if template_changed and did in running:
+                running[did].cancel()
+                del running[did]
+                logger.info(f"[{did}] template modificado, reiniciando...")
+
             if did not in running or running[did].done():
                 try:
-                    template = load_template(dev.get("template", "generic-snmp"))
+                    template = load_template(tpl_name)
                 except FileNotFoundError:
                     logger.warning(f"Template no encontrado para {did}, ignorando")
                     continue
+                template_mtimes[did] = mtime
                 logger.info(f"Iniciando driver para {did}")
                 running[did] = asyncio.create_task(SnmpDriver(dev, template, client).poll_loop())
 
