@@ -54,6 +54,7 @@ export default function Dashboard() {
     const res = await fetch(`${API_URL}/api/tags`)
     if (!res.ok) return
     const tags = await res.json()
+
     setDevices(prev => {
       const next = { ...prev }
       for (const t of tags) {
@@ -62,15 +63,28 @@ export default function Dashboard() {
         const idx = next[t.device_id].tags.findIndex(x => x.tag_id === t.tag_id)
         if (idx >= 0) next[t.device_id].tags[idx] = entry
         else next[t.device_id].tags.push(entry)
-        // poblar buffer con dato inicial
-        if (typeof t.value === 'number') {
-          const key = `${t.device_id}/${t.tag_id}`
-          if (!buffers.current[key]) buffers.current[key] = []
-          buffers.current[key].push({ ts: t.ts, value: t.value })
-        }
       }
       return next
     })
+
+    // pre-poblar buffers con los últimos 5 minutos de historial
+    const numericTags = tags.filter((t: any) => typeof t.value === 'number')
+    await Promise.all(numericTags.map(async (t: any) => {
+      const key = `${t.device_id}/${t.tag_id}`
+      if (buffers.current[key]?.length > 1) return  // ya tiene datos
+      try {
+        const r = await fetch(`${API_URL}/api/tags/${t.device_id}/${t.tag_id}/history?minutes=5`)
+        if (!r.ok) return
+        const { points } = await r.json()
+        if (points?.length > 0) {
+          buffers.current[key] = points.slice(-BUFFER_SIZE)
+          setTick(n => n + 1)
+        } else {
+          // sin historial aún, al menos el punto actual
+          buffers.current[key] = [{ ts: t.ts, value: t.value }]
+        }
+      } catch { /* InfluxDB no disponible, ignorar */ }
+    }))
   }, [])
 
   useEffect(() => {
