@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PlusCircle, Trash2, FileText, ChevronDown, ChevronUp } from 'lucide-react'
+import { PlusCircle, Trash2, FileText, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -56,6 +56,7 @@ export default function TemplatesPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [detail, setDetail] = useState<Template | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [editingKey, setEditingKey] = useState<{protocol: string, name: string} | null>(null)
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -93,6 +94,30 @@ export default function TemplatesPage() {
     load()
   }
 
+  const startEditTemplate = async (protocol: string, name: string) => {
+    const res = await fetch(`${API_URL}/api/templates/${protocol}/${name}`)
+    if (!res.ok) return
+    const d = await res.json()
+    setForm({
+      protocol: d.protocol || protocol,
+      name,
+      manufacturer: d.manufacturer ?? '',
+      model: d.model ?? '',
+      community: d.community ?? '',
+      version: d.version ?? 'v2c',
+    })
+    setTags(d.tags ?? [emptyTag()])
+    setEditingKey({ protocol, name })
+    setShowForm(true)
+  }
+
+  const cancelForm = () => {
+    setShowForm(false)
+    setEditingKey(null)
+    setTags([emptyTag()])
+    setForm({ protocol: 'modbus', name: '', manufacturer: '', model: '', community: '', version: 'v2c' })
+  }
+
   const addTag = () => setTags(t => [...t, emptyTag()])
   const removeTag = (i: number) => setTags(t => t.filter((_, j) => j !== i))
   const updateTag = (i: number, field: string, value: any) =>
@@ -103,16 +128,17 @@ export default function TemplatesPage() {
     setSaving(true)
     try {
       const body = { ...form, tags }
-      const res = await fetch(`${API_URL}/api/templates`, {
-        method: 'POST',
+      const url = editingKey
+        ? `${API_URL}/api/templates/${editingKey.protocol}/${editingKey.name}`
+        : `${API_URL}/api/templates`
+      const res = await fetch(url, {
+        method: editingKey ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       if (res.ok) {
-        setMsg('Template creado correctamente')
-        setShowForm(false)
-        setTags([emptyTag()])
-        setForm({ protocol: 'modbus', name: '', manufacturer: '', model: '', community: '', version: 'v2c' })
+        setMsg(editingKey ? 'Template actualizado' : 'Template creado')
+        cancelForm()
         load()
       } else {
         const err = await res.json()
@@ -141,7 +167,9 @@ export default function TemplatesPage() {
       {showForm && (
         <form onSubmit={handleSubmit}
           className="bg-gray-900 border border-blue-700 rounded-xl p-6 mb-8 space-y-5">
-          <h2 className="text-lg font-semibold text-blue-400">Crear template</h2>
+          <h2 className="text-lg font-semibold text-blue-400">
+          {editingKey ? `Editar: ${editingKey.name}` : 'Crear template'}
+        </h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -354,9 +382,9 @@ export default function TemplatesPage() {
           <div className="flex items-center gap-4">
             <button type="submit" disabled={saving}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded font-medium text-sm transition-colors">
-              {saving ? 'Guardando...' : 'Guardar template'}
+                  {saving ? 'Guardando...' : editingKey ? 'Actualizar template' : 'Guardar template'}
             </button>
-            <button type="button" onClick={() => setShowForm(false)}
+            <button type="button" onClick={cancelForm}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">
               Cancelar
             </button>
@@ -384,9 +412,13 @@ export default function TemplatesPage() {
                     <FileText size={16} className="text-blue-400 shrink-0" />
                     <span className="font-medium text-sm flex-1">{name}</span>
                     <span className="text-xs text-gray-500">{protocol}</span>
+                    <button onClick={e => { e.stopPropagation(); startEditTemplate(protocol, name) }}
+                      className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/20 rounded transition-colors">
+                      <Pencil size={14}/>
+                    </button>
                     <button onClick={e => { e.stopPropagation(); deleteTemplate(protocol, name) }}
                       className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors">
-                      <Trash2 size={14} />
+                      <Trash2 size={14}/>
                     </button>
                     {isOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                   </div>

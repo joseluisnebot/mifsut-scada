@@ -167,6 +167,57 @@ async def delete_device(device_id: str):
     return {"ok": True, "deleted": deleted}
 
 
+@router.get("/devices/{device_id}")
+async def get_device(device_id: str):
+    for proto in os.listdir(DEVICES_PATH) if os.path.isdir(DEVICES_PATH) else []:
+        proto_path = os.path.join(DEVICES_PATH, proto)
+        if not os.path.isdir(proto_path):
+            continue
+        for fname in os.listdir(proto_path):
+            if fname.endswith((".yaml", ".yml")):
+                path = os.path.join(proto_path, fname)
+                try:
+                    with open(path) as f:
+                        dev = yaml.safe_load(f)
+                    if dev and dev.get("device_id") == device_id:
+                        return {**dev, "protocol": proto}
+                except Exception:
+                    continue
+    raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
+
+
+@router.put("/devices/{device_id}")
+async def update_device(device_id: str, device: DeviceCreate):
+    # buscar y eliminar el fichero anterior (puede haber cambiado de protocolo)
+    for proto in os.listdir(DEVICES_PATH) if os.path.isdir(DEVICES_PATH) else []:
+        proto_path = os.path.join(DEVICES_PATH, proto)
+        if not os.path.isdir(proto_path):
+            continue
+        for fname in os.listdir(proto_path):
+            if fname.endswith((".yaml", ".yml")):
+                path = os.path.join(proto_path, fname)
+                try:
+                    with open(path) as f:
+                        dev = yaml.safe_load(f)
+                    if dev and dev.get("device_id") == device_id:
+                        os.remove(path)
+                except Exception:
+                    continue
+    # escribir con los nuevos datos
+    devices_dir = os.path.join(DEVICES_PATH, device.protocol)
+    os.makedirs(devices_dir, exist_ok=True)
+    config = {
+        "device_id": device.device_id,
+        "template": device.template,
+        "connection": device.connection,
+        "poll_interval_ms": device.poll_interval_ms,
+    }
+    path = os.path.join(devices_dir, f"{device.device_id}.yaml")
+    with open(path, "w") as f:
+        yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+    return {"ok": True, "path": path}
+
+
 @router.get("/devices/{device_id}/status")
 async def device_status(device_id: str):
     latest = get_latest()
@@ -241,6 +292,31 @@ async def create_template(tpl: TemplateCreate):
     with open(path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
 
+    return {"ok": True, "name": fname, "path": path}
+
+
+@router.put("/templates/{protocol}/{name}")
+async def update_template(protocol: str, name: str, tpl: TemplateCreate):
+    for ext in (".yaml", ".yml"):
+        path = os.path.join(TEMPLATES_PATH, protocol, f"{name}{ext}")
+        if os.path.exists(path):
+            os.remove(path)
+    proto_path = os.path.join(TEMPLATES_PATH, tpl.protocol)
+    os.makedirs(proto_path, exist_ok=True)
+    fname = _safe_name(tpl.name)
+    path = os.path.join(proto_path, f"{fname}.yaml")
+    data: dict = {
+        "manufacturer": tpl.manufacturer,
+        "model": tpl.model,
+        "protocol": tpl.protocol,
+    }
+    if tpl.version:
+        data["version"] = tpl.version
+    if tpl.community:
+        data["community"] = tpl.community
+    data["tags"] = [_tag_to_dict(t, tpl.protocol) for t in tpl.tags]
+    with open(path, "w") as f:
+        yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
     return {"ok": True, "name": fname, "path": path}
 
 

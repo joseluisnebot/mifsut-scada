@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PlusCircle, Server, CheckCircle, XCircle, Trash2 } from 'lucide-react'
+import { PlusCircle, Server, CheckCircle, XCircle, Trash2, Pencil, X } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -32,6 +32,8 @@ export default function DevicesPage() {
   })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
 
   const load = async () => {
     try {
@@ -52,6 +54,28 @@ export default function DevicesPage() {
     load()
   }
 
+  const startEdit = async (device_id: string) => {
+    const res = await fetch(`${API_URL}/api/devices/${device_id}`)
+    if (!res.ok) return
+    const d = await res.json()
+    setForm({
+      device_id: d.device_id,
+      protocol: d.protocol,
+      template: d.template ?? '',
+      host: d.connection?.host ?? '',
+      port: d.connection?.port?.toString() ?? '',
+      poll_interval_ms: d.poll_interval_ms?.toString() ?? '1000',
+    })
+    setEditingId(device_id)
+    setShowForm(true)
+  }
+
+  const cancelForm = () => {
+    setShowForm(false)
+    setEditingId(null)
+    setForm({ device_id: '', protocol: '', template: '', host: '', port: '', poll_interval_ms: '1000' })
+  }
+
   useEffect(() => {
     load()
     const t = setInterval(load, 5000)
@@ -68,20 +92,24 @@ export default function DevicesPage() {
       const connection: Record<string, any> = { host: form.host }
       if (form.port) connection.port = parseInt(form.port)
 
-      const res = await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const body = {
+        device_id: form.device_id,
+        protocol: form.protocol,
+        template: form.template,
+        connection,
+        poll_interval_ms: parseInt(form.poll_interval_ms),
+      }
+      const url = editingId
+        ? `${API_URL}/api/devices/${editingId}`
+        : `${API_URL}/api/devices`
+      const res = await fetch(url, {
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: form.device_id,
-          protocol: form.protocol,
-          template: `${form.template}`,
-          connection,
-          poll_interval_ms: parseInt(form.poll_interval_ms),
-        }),
+        body: JSON.stringify(body),
       })
       if (res.ok) {
-        setMsg('Dispositivo guardado. El driver lo detectará en el próximo reinicio.')
-        setForm({ device_id: '', protocol: '', template: '', host: '', port: '', poll_interval_ms: '1000' })
+        setMsg(editingId ? 'Dispositivo actualizado.' : 'Dispositivo creado.')
+        cancelForm()
         load()
       } else {
         setMsg('Error al guardar')
@@ -96,7 +124,15 @@ export default function DevicesPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Dispositivos</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Dispositivos</h1>
+        {!showForm && (
+          <button onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors">
+            <PlusCircle size={16}/> Nuevo dispositivo
+          </button>
+        )}
+      </div>
 
       <div className="grid gap-3 mb-10">
         {devices.length === 0 && (
@@ -116,18 +152,28 @@ export default function DevicesPage() {
             <span className={`text-xs px-2 py-0.5 rounded ${d.online ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
               {d.online ? 'ONLINE' : 'OFFLINE'}
             </span>
+            <button onClick={() => startEdit(d.device_id)}
+              className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/20 rounded transition-colors">
+              <Pencil size={14}/>
+            </button>
             <button onClick={() => deleteDevice(d.device_id)}
-              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors ml-1">
-              <Trash2 size={15} />
+              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors">
+              <Trash2 size={15}/>
             </button>
           </div>
         ))}
       </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <PlusCircle size={20} className="text-blue-400" /> Añadir dispositivo
-        </h2>
+      {showForm && <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            {editingId
+              ? <><Pencil size={18} className="text-blue-400"/> Editar dispositivo</>
+              : <><PlusCircle size={18} className="text-blue-400"/> Nuevo dispositivo</>
+            }
+          </h2>
+          <button onClick={cancelForm} className="text-gray-500 hover:text-gray-300"><X size={18}/></button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -206,12 +252,17 @@ export default function DevicesPage() {
             disabled={saving}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded font-medium text-sm transition-colors"
           >
-            {saving ? 'Guardando...' : 'Guardar dispositivo'}
+            {saving ? 'Guardando...' : editingId ? 'Actualizar' : 'Guardar dispositivo'}
+          </button>
+          <button type="button" onClick={cancelForm}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">
+            Cancelar
           </button>
 
           {msg && <p className="text-sm text-blue-300">{msg}</p>}
         </form>
-      </div>
+      </div>}
+      {msg && !showForm && <p className="mt-4 text-sm text-blue-300">{msg}</p>}
     </div>
   )
 }
