@@ -31,6 +31,7 @@ http://localhost:3000
 ### Dashboard — datos en tiempo real con gráficas y alarmas
 ![Dashboard](images/dashboard.png)
 
+
 ### Gestión de dispositivos
 ![Dispositivos](images/dispositivos.png)
 
