@@ -1,6 +1,9 @@
 # Entorno — cada instalación tiene el suyo
 .env
 
+# Generador de licencias — uso privado del desarrollador
+gen_license.py
+
 # Configuración de dispositivos — específica de cada instalación
 devices/modbus/*.yaml
 devices/opcua/*.yaml

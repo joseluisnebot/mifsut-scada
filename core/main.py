@@ -4,6 +4,8 @@ import os
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from core.license_check import license_middleware
 from sqlalchemy import create_engine
 
 import core.mqtt_handler as mq
@@ -20,6 +22,7 @@ POSTGRES_URL = os.getenv("POSTGRES_URL", "postgresql://scada:scada@postgres:5432
 
 app = FastAPI(title="SCADA Core API", version="1.0.0")
 
+app.add_middleware(BaseHTTPMiddleware, dispatch=license_middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
