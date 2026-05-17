@@ -31,6 +31,8 @@ def clear_device(device_id: str):
     keys = [k for k in _latest if k.split("/")[0] == device_id]
     for k in keys:
         del _latest[k]
+    # notificar al dashboard para que elimine el device en tiempo real
+    _broadcast({"type": "device_deleted", "device_id": device_id})
 
 
 def register_ws(ws):

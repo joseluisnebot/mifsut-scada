@@ -90,7 +90,10 @@ export default function Dashboard() {
           const next = { ...prev }
           if (!next[did]) next[did] = { device_id: did, status: null, tags: [] }
 
-          if (msg.type === 'status') {
+          if (msg.type === 'device_deleted') {
+            delete next[did]
+            return next
+          } else if (msg.type === 'status') {
             next[did] = { ...next[did], status: msg.data }
           } else if (msg.type === 'tag') {
             const tags = [...next[did].tags]
