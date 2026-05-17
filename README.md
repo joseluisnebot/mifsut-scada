@@ -242,6 +242,55 @@ Dispositivos físicos
 
 ---
 
+## Licencias
+
+El sistema incluye un mecanismo de control de acceso por token. Permite activar, renovar o desactivar instalaciones de clientes sin tocar el código.
+
+### Cómo funciona
+
+Cada instalación tiene dos variables en su `.env`:
+
+```bash
+LICENSE_SECRET=clave_unica_por_cliente
+LICENSE_TOKEN=token_generado_por_el_desarrollador
+```
+
+- **`LICENSE_SECRET`** — clave que el desarrollador pone al instalar. El cliente no sabe para qué sirve.
+- **`LICENSE_TOKEN`** — token firmado con fecha de expiración. El desarrollador lo genera y lo envía al cliente.
+
+Si el token expira o no existe, la API deja de responder y el dashboard queda en blanco. Sin mensajes ni avisos.
+
+### Tipos de licencia
+
+| Tipo | Uso |
+|---|---|
+| Temporal (30, 90 días...) | Clientes con pago periódico |
+| Permanente | Clientes que han comprado la licencia completa |
+
+### Renovar o activar una licencia
+
+El desarrollador genera un nuevo token y lo envía al cliente. El cliente lo pega en su `.env`:
+
+```bash
+LICENSE_TOKEN=nuevo_token
+```
+
+Y reinicia el core:
+
+```bash
+~/.local/bin/docker-compose restart core
+```
+
+El sistema vuelve a funcionar de inmediato.
+
+### Sin licencia configurada
+
+Si `LICENSE_SECRET` no está en el `.env`, el sistema funciona sin restricciones. Útil para entornos de desarrollo y demos propias.
+
+> El generador de tokens es una herramienta privada del desarrollador, no incluida en este repositorio.
+
+---
+
 ## Documentación completa
 
 - [Guía de instalación](INSTALACION.md) — requisitos, instalación manual, producción, troubleshooting
